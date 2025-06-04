@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevOps - Lior Tal Amazon ECS</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="main-container"><!-- keeps everything centered -->
+
+    <header>
+      <h1>👨‍💻 Lior Tal - DevOps in Progress</h1>
+      <p>
+        Welcome to my frontend container served by Docker and NGINX.<br />
+        Currently learning Amazon Elastic Container Service (ECS).
+      </p>
+      <!-- floating dog button (kept outside normal flow via CSS) -->
+      <button class="shimi-btn" onclick="getShimi()" aria-label="Summon Shimi">🐕‍🦺</button>
+    </header>
+
+    <main>
+      <!-- terminal look‑and‑feel -->
+      <div class="terminal">
+        $ sudo apt install italian-brainrot<br />
+        ✔️ 🐸 Bombardillo Crocodillo<br />
+        ✔️ 🦈 Tralalero Tralala<br />
+        ✔️ Container running on ECS<br />
+        ✔️ NGINX is serving you this page 🚀
+      </div>
+
+      <section>
+        <h2>Backend Response:</h2>
+        <p id="api-response">Loading…</p>
+      </section>
+
+      <section>
+        <button class="brainrot-btn" onclick="getBrainrot()">Get Italian Brainrot</button>
+        <div id="random-brainrot" aria-live="polite"></div>
+        <img id="brainrot-img" class="brainrot-image" src="" alt="Brainrot Image" />
+      </section>
+    </main>
+
+    <footer>
+      <p class="click-counter"></p>
+      <p>כול הזכויות שמורות לבעל הבית</p>
+    </footer>
+  </div>
+
+  
+  <div id="overlay-container">
+    <div id="shimi-container"></div>
+  </div>
+
+  <div class="easter-egg hidden" role="alert">
+    <p>Lama ata Koyi Noi Ba'al ha bait?</p>
+    <img src="./images/thai.gif" alt="Koyi Gif" />
+  </div>
+
+  <script src="./index.js"></script>
+</body>
+</html>

@@ -130,8 +130,8 @@ spec:
       echo "Deployment failed. Please check the logs for details."
     }
     
-    always {
-      deleteDir()
-    }
+    // always {
+    //   deleteDir()
+    // }
   }
 }

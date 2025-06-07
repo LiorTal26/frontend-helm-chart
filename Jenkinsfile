@@ -1,10 +1,6 @@
-pipeline {
-    triggers{
-        githubPush()
-    }
-  agent {
+pipeline { {
     kubernetes {
-      cloud 'kubernetes-lior-local'
+      
       yaml """
 apiVersion: v1
 kind: Pod

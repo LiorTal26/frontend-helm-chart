@@ -54,7 +54,7 @@ spec:
     IMAGE_TAG     = "${env.BUILD_NUMBER}"
     IMAGE_NAME    = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
     CHART_DIR     = 'lior-nginx'
-    RELEASE_NAME  = 'lior-frontend'
+    RELEASE_NAME  = 'lior-nginx'
     NAMESPACE     = 'web1'
   }
 

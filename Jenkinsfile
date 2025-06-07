@@ -107,21 +107,7 @@ spec:
         }
       }
     }
-    stage('Ensure imagePullSecret exists') {
-    steps {
-      container('aws-cli') {         
-        sh """   
-          kubectl -n ${NAMESPACE} create secret docker-registry ecr-pull-secret \
-            --docker-server=${ECR_REGISTRY} \
-            --docker-username=AWS \
-            --docker-password=${ECR_PASSWORD} \
-            --docker-email=you@example.com \
-            --dry-run=client -o yaml \
-          | kubectl -n ${NAMESPACE} apply -f -
-        """
-      }
-    }
-   }
+    
     stage('Deploy with Helm') {
       steps {
         container('helm') {

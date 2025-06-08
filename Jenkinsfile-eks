@@ -58,6 +58,8 @@ spec:
     CHART_DIR     = 'lior-nginx'
     RELEASE_NAME  = 'lior-nginx'
     NAMESPACE     = 'lior'
+    // KUBECONFIG   = "${env.WORKSPACE}/.kube/config"
+    HOST_INGRESS = 'lior-ingress.aws.cts.care'
   }
 
   stages {
@@ -99,7 +101,21 @@ spec:
         }
       }
     }
-
+    // stage('Configure Kubeconfig for EKS') {
+    //   steps {
+    //     container('aws-cli') {
+    //       withCredentials([[
+    //         $class: 'AmazonWebServicesCredentialsBinding',
+    //         credentialsId: 'imtech'
+    //       ]]) {
+    //         sh '''
+    //           mkdir -p "$(dirname "$KUBECONFIG")"
+    //           aws eks update-kubeconfig --name imtech01 --region ${AWS_REGION} --kubeconfig "$KUBECONFIG"
+    //         '''
+    //       }
+    //     }
+    //   }
+    }
     stage('Helm Lint & Package') {
       steps {
         container('helm') {
@@ -119,7 +135,8 @@ spec:
               --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \
               --set image.tag=${IMAGE_TAG} \
               --set ingress.enabled=true \
-              --set ingress.host=lior-ingress.aws.cts.care
+              --set ingress.host=${HOST_INGRESS} \
+              --set image.pullSecrets[0].name=${ECR_PASSWORD}
           """
         }
       }

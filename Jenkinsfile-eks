@@ -2,7 +2,7 @@ pipeline {
     
   agent {
     kubernetes {
-      cloud 'kubernetes-lior-local'
+      cloud 'imtech01-eks'
       yaml """
 apiVersion: v1
 kind: Pod
@@ -88,7 +88,7 @@ spec:
         container('docker') {
           sh """
             echo 'Waiting for Docker daemon…'
-            until docker info > /dev/null 2>&1; do sleep 3; done
+            until docker info > /dev/null 2>&1; do sleep 2; done
 
             echo '${ECR_PASSWORD}' | docker login -u AWS --password-stdin ${ECR_REGISTRY}
             docker build -t ${IMAGE_NAME} ./frontend
@@ -116,7 +116,9 @@ spec:
               --namespace ${NAMESPACE} \
               --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \
               --set image.tag=${IMAGE_TAG} \
-              --set imagePullSecrets[0].name=ecr-pull-secret
+              --set imagePullSecrets[0].name=ecr-pull-secret \
+              --set ingress.enabled=true \
+              --set ingress.host=lior-ingress.aws.cts.care
           """
         }
       }

@@ -14,7 +14,7 @@ metadata:
     app: jenkins-agent
 spec:
   serviceAccountName: jenkins-admin
-  
+
   imagePullSecrets:
     - name: ecr-pull-secret
   containers:
@@ -90,20 +90,20 @@ spec:
       }
     }
 
-    stage('Create/Update ECR Pull Secret') {
-      steps {
-        container('aws-cli') {
-          sh """
-            kubectl create secret docker-registry ecr-pull-secret \\
-              --docker-server=${ECR_REGISTRY} \\
-              --docker-username=AWS \\
-              --docker-password='${ECR_PASSWORD}' \\
-              --namespace=${NAMESPACE} \\
-              --dry-run=client -o yaml | kubectl apply -f -
-          """
-        }
-      }
-    }
+    // stage('Create/Update ECR Pull Secret') {
+    //   steps {
+    //     container('aws-cli') {
+    //       sh """
+    //         kubectl create secret docker-registry ecr-pull-secret \
+    //           --docker-server=${ECR_REGISTRY} \
+    //           --docker-username=AWS \
+    //           --docker-password='${ECR_PASSWORD}' \
+    //           --namespace=${NAMESPACE} \
+    //           --dry-run=client -o yaml | kubectl apply -f -
+    //       """
+    //     }
+    //   }
+    // }
 
     stage('Build & Push Docker Image') {
       steps {

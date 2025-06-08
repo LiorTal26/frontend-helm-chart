@@ -1,7 +1,8 @@
 pipeline {
-    triggers{
-      pollSCM('H/1 * * * *')
-    }
+  triggers {
+    pollSCM('H/1 * * * *')
+  }
+
   agent {
     kubernetes {
       cloud 'imtech01-eks'
@@ -13,38 +14,41 @@ metadata:
     app: jenkins-agent
 spec:
   serviceAccountName: jenkins-admin
+  
+  imagePullSecrets:
+    - name: ecr-pull-secret
   containers:
-    - name: dind
-      image: docker:20.10-dind
-      securityContext:
-        privileged: true
-      env:
-        - name: DOCKER_TLS_CERTDIR
-          value: ""
-      args:
-        - --host=tcp://0.0.0.0:2375
-        - --storage-driver=overlay2
+  - name: dind
+    image: docker:20.10-dind
+    securityContext:
+      privileged: true
+    env:
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+    args:
+      - --host=tcp://0.0.0.0:2375
+      - --storage-driver=overlay2
 
-    - name: docker
-      image: docker:20.10
-      command:
-        - cat
-      tty: true
-      env:
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
+  - name: docker
+    image: docker:20.10
+    command:
+      - cat
+    tty: true
+    env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
 
-    - name: aws-cli
-      image: amazon/aws-cli:2.11.0
-      command:
-        - cat
-      tty: true
+  - name: aws-cli
+    image: amazon/aws-cli:2.11.0
+    command:
+      - cat
+    tty: true
 
-    - name: helm
-      image: alpine/helm:3.10.0
-      command:
-        - cat
-      tty: true
+  - name: helm
+    image: alpine/helm:3.10.0
+    command:
+      - cat
+    tty: true
 """
     }
   }
@@ -58,8 +62,7 @@ spec:
     CHART_DIR     = 'lior-nginx'
     RELEASE_NAME  = 'lior-nginx'
     NAMESPACE     = 'lior'
-    // KUBECONFIG   = "${env.WORKSPACE}/.kube/config"
-    HOST_INGRESS = 'lior-ingress.aws.cts.care'
+    HOST_INGRESS  = 'lior-ingress.aws.cts.care'
   }
 
   stages {
@@ -87,6 +90,21 @@ spec:
       }
     }
 
+    stage('Create/Update ECR Pull Secret') {
+      steps {
+        container('aws-cli') {
+          sh """
+            kubectl create secret docker-registry ecr-pull-secret \\
+              --docker-server=${ECR_REGISTRY} \\
+              --docker-username=AWS \\
+              --docker-password='${ECR_PASSWORD}' \\
+              --namespace=${NAMESPACE} \\
+              --dry-run=client -o yaml | kubectl apply -f -
+          """
+        }
+      }
+    }
+
     stage('Build & Push Docker Image') {
       steps {
         container('docker') {
@@ -101,6 +119,7 @@ spec:
         }
       }
     }
+
     // stage('Configure Kubeconfig for EKS') {
     //   steps {
     //     container('aws-cli') {
@@ -108,24 +127,27 @@ spec:
     //         $class: 'AmazonWebServicesCredentialsBinding',
     //         credentialsId: 'imtech'
     //       ]]) {
-    //         sh '''
-    //           mkdir -p "$(dirname "$KUBECONFIG")"
-    //           aws eks update-kubeconfig --name imtech01 --region ${AWS_REGION} --kubeconfig "$KUBECONFIG"
-    //         '''
+    //         sh """
+    //           aws eks update-kubeconfig \\
+    //             --name imtech01 \\
+    //             --region ${AWS_REGION} \\
+    //             --kubeconfig \$WORKSPACE/.kube/config
+
+    //           export KUBECONFIG=\$WORKSPACE/.kube/config
+    //         """
     //       }
     //     }
     //   }
-    }
+    // }
+
     stage('Helm Lint & Package') {
       steps {
         container('helm') {
-          sh """
-            helm lint ${CHART_DIR}
-          """
+          sh "helm lint ${CHART_DIR}"
         }
       }
     }
-    
+
     stage('Deploy with Helm') {
       steps {
         container('helm') {
@@ -136,7 +158,7 @@ spec:
               --set image.tag=${IMAGE_TAG} \
               --set ingress.enabled=true \
               --set ingress.host=${HOST_INGRESS} \
-              --set image.pullSecrets[0].name=${ECR_PASSWORD}
+              --set imagePullSecrets[0].name=ecr-pull-creds
           """
         }
       }
@@ -145,15 +167,10 @@ spec:
 
   post {
     success {
-      echo "Deployment successful: ${IMAGE_NAME} deployed to ${NAMESPACE} namespace."
+      echo "✅ Deployment successful: ${IMAGE_NAME} deployed to ${NAMESPACE}."
     }
     failure {
-      echo "Deployment failed. Please check the logs for details."
+      echo "❌ Deployment failed. Please check the logs for details."
     }
-    
-    // always {
-    //   deleteDir()
-    // }
   }
-
-
+}

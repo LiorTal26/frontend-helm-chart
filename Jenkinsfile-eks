@@ -116,7 +116,6 @@ spec:
               --namespace ${NAMESPACE} \
               --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \
               --set image.tag=${IMAGE_TAG} \
-              --set imagePullSecrets[0].name=ecr-pull-secret \
               --set ingress.enabled=true \
               --set ingress.host=lior-ingress.aws.cts.care
           """

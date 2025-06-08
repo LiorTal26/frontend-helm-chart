@@ -120,26 +120,6 @@ spec:
       }
     }
 
-    // stage('Configure Kubeconfig for EKS') {
-    //   steps {
-    //     container('aws-cli') {
-    //       withCredentials([[
-    //         $class: 'AmazonWebServicesCredentialsBinding',
-    //         credentialsId: 'imtech'
-    //       ]]) {
-    //         sh """
-    //           aws eks update-kubeconfig \\
-    //             --name imtech01 \\
-    //             --region ${AWS_REGION} \\
-    //             --kubeconfig \$WORKSPACE/.kube/config
-
-    //           export KUBECONFIG=\$WORKSPACE/.kube/config
-    //         """
-    //       }
-    //     }
-    //   }
-    // }
-
     stage('Helm Lint & Package') {
       steps {
         container('helm') {

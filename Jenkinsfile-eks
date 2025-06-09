@@ -148,6 +148,7 @@ spec:
   post {
     success {
       echo "✅ Deployment successful: ${IMAGE_NAME} deployed to ${NAMESPACE}."
+      echo "Access the application at: http://${HOST_INGRESS}"
     }
     failure {
       echo "❌ Deployment failed. Please check the logs for details."

@@ -1,16 +1,28 @@
 {{- if .Values.ingress.enabled }}
+{{- $fullName := include "lior-nginx.fullname" . }}
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ include "lior-nginx.fullname" . }}-route
+  name: {{ printf "%s-route" $fullName }}
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
 spec:
   entryPoints:
+    {{- range .Values.ingress.entryPoints }}
+    - {{ . }}
+    {{- else }}
     - web
+    {{- end }}
   routes:
-    - match: Host(`{{ .Values.ingress.host }}`)
+    {{- range .Values.ingress.hosts }}
+    {{- $host := .host }}
+    {{- range .paths }}
+    - match: Host(`{{ $host }}`)
       kind: Rule
       services:
-        - name: {{ include "lior-nginx.fullname" . }}
-          port: {{ .Values.service.port }}
+        - name: {{ $fullName }}
+          port: {{ $.Values.service.port }}
+    {{- end }}
+    {{- end }}
 {{- end }}

@@ -60,3 +60,35 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the Service type, forcing ClusterIP if ingress is enabled.
+*/}}
+{{- define "lior-nginx.serviceType" -}}
+{{- if .Values.ingress.enabled -}}
+ClusterIP
+{{- else -}}
+{{- default (or .Values.service.type "ClusterIP") .Values.service.type -}}
+{{- end -}}
+{{- end }}
+
+{{/* 
+Return the port the Service exposes 
+*/}}
+{{- define "lior-nginx.servicePort" -}}
+{{- default .Values.service.port 80 -}}
+{{- end }}
+
+{{/* 
+Return the targetPort for the Service (and for probes) 
+*/}}
+{{- define "lior-nginx.targetPort" -}}
+{{- default .Values.service.targetPort (include "lior-nginx.servicePort" .) -}}
+{{- end }}
+
+{{/* 
+Return the full image reference 
+*/}}
+{{- define "lior-nginx.image" -}}
+{{- printf "%s:%s" .Values.image.repository .Values.image.tag -}}
+{{- end }}

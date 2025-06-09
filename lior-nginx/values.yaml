@@ -53,7 +53,7 @@ securityContext: {}
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
+  type: LoadBalancer
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   name: lior-nginx
   port: 80
@@ -79,7 +79,10 @@ service:
 #   #    hosts:
 #   #      - chart-example.local
 ingress:
-  enabled: true
+  enabled: false
+  entryPoints:
+    - web
+
   annotations:
     kubernetes.io/ingress.class: "traefik"
   hosts:

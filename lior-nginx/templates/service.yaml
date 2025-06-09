@@ -5,10 +5,10 @@ metadata:
   labels:
     {{- include "lior-nginx.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ include "lior-nginx.serviceType" . }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       name: http
   selector:

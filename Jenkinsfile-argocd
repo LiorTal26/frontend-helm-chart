@@ -64,6 +64,7 @@ spec:
     RELEASE_NAME  = 'lior-nginx'
     NAMESPACE     = 'lior'
     HOST_INGRESS  = 'lior-ingress.aws.cts.care'
+    ECR_CHART_REPO = 'lior/helm-charts'
   }
 
   stages {
@@ -115,6 +116,17 @@ spec:
         }
       }
     }
+      stage('Login to ECR (Helm)') {
+      steps {
+        container('helm') {
+          sh """
+            echo "${ECR_PASSWORD}" | helm registry login --username AWS --password-stdin ${ECR_REGISTRY}
+            helm package "${CHART_DIR}"
+            helm push "${CHART_DIR}-0.1.3.tgz   oci://${ECR_REGISTRY}/lior/helm-charts
+          """
+        }
+      }
+    }
 
     stage('Sync ArgoCD Application') {
       agent any
@@ -131,7 +143,8 @@ spec:
 
   source:
     repoURL: "${ECR_REGISTRY}"
-    chart: lior/helm-charts/lior-nginx
+    
+    chart: "${ECR_CHART_REPO}/${CHART_DIR}"
     targetRevision: "0.1.3"
     helm:
       values: |

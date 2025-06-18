@@ -14,10 +14,11 @@ metadata:
     app: jenkins-agent
 spec:
   serviceAccountName: jenkins-admin
-
   imagePullSecrets:
-    - name: ecr-pull-secret
+    - name: ecr-pull-creds
+
   containers:
+
   - name: dind
     image: docker:20.10-dind
     securityContext:
@@ -31,31 +32,24 @@ spec:
 
   - name: docker
     image: docker:20.10
-    command:
-      - cat
+    command: ['cat']
     tty: true
+    stdin: true
     env:
       - name: DOCKER_HOST
         value: tcp://localhost:2375
 
   - name: aws-cli
     image: amazon/aws-cli:2.11.0
-    command:
-      - cat
+    command: ['cat']
     tty: true
+    stdin: true
 
   - name: helm
     image: alpine/helm:3.10.0
-    command:
-      - cat
+    command: ['cat']
     tty: true
-
-  - name: kubectl
-    image: bitnami/kubectl:1.32
-    command:
-      - cat
-    tty: true
-    
+    stdin: true
 """
     }
   }
@@ -79,6 +73,16 @@ spec:
       }
     }
 
+    stage('kubectl version') {
+      agent any
+      steps {
+        sh """
+          kubectl version --client
+          kubectl get nodes
+        """
+      }
+    }
+
     stage('Authenticate to ECR') {
       steps {
         container('aws-cli') {
@@ -94,40 +98,10 @@ spec:
             }
           }
         }
-        
-      }
-    }
-    stage('Create ECR Secret') {
-      steps {
-        container('kubectl') {
-          sh """
-          echo ecr creds "${ECR_PASSWORD}"
-          echo "Creating or updating ECR pull secret in Kubernetes namespace: ${NAMESPACE}"
-            kubectl create secret docker-registry ecr-pull-creds \
-              --docker-server=${ECR_REGISTRY} \
-              --docker-username=AWS \
-              --docker-password='${ECR_PASSWORD}' \
-              --namespace=${NAMESPACE} \
-              --dry-run=client -o yaml | kubectl apply -f -
-          """
-        }
       }
     }
 
-    // stage('Create/Update ECR Pull Secret') {
-    //   steps {
-    //     container('aws-cli') {
-    //       sh """
-    //         kubectl create secret docker-registry ecr-pull-secret \
-    //           --docker-server=${ECR_REGISTRY} \
-    //           --docker-username=AWS \
-    //           --docker-password='${ECR_PASSWORD}' \
-    //           --namespace=${NAMESPACE} \
-    //           --dry-run=client -o yaml | kubectl apply -f -
-    //       """
-    //     }
-    //   }
-    // }
+   
 
     stage('Build & Push Docker Image') {
       steps {
@@ -143,41 +117,64 @@ spec:
         }
       }
     }
-    // stage('Helm push to ECR') {
-    //   steps {
-    //     container('helm') {
-    //       sh "helm lint ${CHART_DIR}"
-    //     }
-    //   }
-    // }
-    stage('Helm Lint & Package') {
-      steps {
-        container('helm') {
-          sh "helm lint ${CHART_DIR}"
-        }
-      }
-    }
+    stage('Sync ArgoCD Application') {
+  agent any
+  steps {
+    script {
+      writeFile file: 'argocd-app.yaml', text: """\
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lior-frontend-argocd
+  namespace: argocd
+spec:
+  project: default
 
-    stage('Deploy with Helm') {
-      steps {
-        container('helm') {
-          sh """
-            helm upgrade --install ${RELEASE_NAME} ${CHART_DIR} \
-              --namespace ${NAMESPACE} \
-              --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \
-              --set image.tag="${IMAGE_TAG}" \
-              --set ingress.enabled=true \
-              --set ingress.host=${HOST_INGRESS} \
-              --set imagePullSecrets[0].name=ecr-pull-creds
-          """
-        }
-      }
+  source:
+    repoURL: "${ECR_REGISTRY}"
+    chart: lior/helm-charts/lior-nginx
+    targetRevision: "0.1.3"
+    helm:
+      values: |
+        replicaCount: 2
+
+        image:
+          repository: "${ECR_REGISTRY}"/lior/helm/frontend
+          tag: "${IMAGE_TAG}"
+          pullPolicy: IfNotPresent
+
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: "traefik"
+          hosts:
+            - host: lior-ingress.aws.cts.care
+              paths:
+                - path: /
+                  pathType: Prefix
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lior
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+"""
+      sh 'kubectl apply -f argocd-app.yaml'
     }
+  }
+}
+
+}
+
   }
 
   post {
     success {
       echo "✅ Deployment successful: ${IMAGE_NAME} deployed to ${NAMESPACE}."
+      echo "Deployment using ArgoCD"
       echo "Access the application at: http://${HOST_INGRESS}"
     }
     failure {

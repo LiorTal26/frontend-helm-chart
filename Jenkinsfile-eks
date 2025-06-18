@@ -76,7 +76,10 @@ spec:
     stage('kubectl version') {
       agent any
       steps {
-        sh 'kubectl version --client'
+        sh """
+          kubectl version --client
+          kubectl get nodes
+        """
       }
     }
 

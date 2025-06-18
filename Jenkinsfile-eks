@@ -84,7 +84,6 @@ spec:
     }
 
     stage('Authenticate to ECR') {
-      // ← removed the stray `agent` here so this runs in the aws-cli container 
       steps {
         container('aws-cli') {
           withCredentials([[

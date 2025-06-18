@@ -49,6 +49,12 @@ spec:
     command:
       - cat
     tty: true
+
+  - name: kubectl
+    image: bitnami/kubectl:1.32
+    command:
+      - cat
+    tty: true
     
 """
     }
@@ -87,6 +93,17 @@ spec:
               ).trim()
             }
           }
+        }
+        container('kubectl') {
+          sh """
+            kubectl delete secret ecr-pull-creds --ignore-not-found --namespace=${NAMESPACE}
+            kubectl create secret docker-registry ecr-pull-creds \
+              --docker-server=${ECR_REGISTRY} \
+              --docker-username=AWS \
+              --docker-password='${ECR_PASSWORD}' \
+              --namespace=${NAMESPACE}
+            echo "ECR pull secret created/updated in namespace ${NAMESPACE}."
+          """
         }
       }
     }

@@ -94,15 +94,21 @@ spec:
             }
           }
         }
+        
+      }
+    }
+    stage('Create ECR Secret') {
+      steps {
         container('kubectl') {
           sh """
-            kubectl delete secret ecr-pull-creds --ignore-not-found --namespace=${NAMESPACE}
+          echo ecr creds "${ECR_PASSWORD}"
+          echo "Creating or updating ECR pull secret in Kubernetes namespace: ${NAMESPACE}"
             kubectl create secret docker-registry ecr-pull-creds \
               --docker-server=${ECR_REGISTRY} \
               --docker-username=AWS \
               --docker-password='${ECR_PASSWORD}' \
-              --namespace=${NAMESPACE}
-            echo "ECR pull secret created/updated in namespace ${NAMESPACE}."
+              --namespace=${NAMESPACE} \
+              --dry-run=client -o yaml | kubectl apply -f -
           """
         }
       }

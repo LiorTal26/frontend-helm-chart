@@ -97,47 +97,34 @@ spec:
         
       }
     }
+    stage('Kubectl check  ') {
+      steps {
+        container('kubectl') {
+          sh """
+           echo ecr creds "${ECR_PASSWORD}" 
+           kubectl version 
+           
+           """
+        }
+      }
+    }
     // stage('Create ECR Secret') {
     //   steps {
     //     container('kubectl') {
     //       sh """
     //       echo ecr creds "${ECR_PASSWORD}"
     //       echo "Creating or updating ECR pull secret in Kubernetes namespace: ${NAMESPACE}"
-    //         kubectl create secret docker-registry ecr-pull-creds \
-    //           --docker-server=${ECR_REGISTRY} \
-    //           --docker-username=AWS \
-    //           --docker-password='${ECR_PASSWORD}' \
-    //           --namespace=${NAMESPACE} \
-    //       """
-    //     }
-    //   }
-    }
-     stage('Create ECR Secret') {
-      steps {
-        container('kubectl') {
-          sh """
-           echo ecr creds "${ECR_PASSWORD}" 
-          kubectl version 
-           
-           """
-        }
-      }
-    }
-
-    // stage('Create/Update ECR Pull Secret') {
-    //   steps {
-    //     container('aws-cli') {
-    //       sh """
-    //         kubectl create secret docker-registry ecr-pull-secret \
-    //           --docker-server=${ECR_REGISTRY} \
-    //           --docker-username=AWS \
-    //           --docker-password='${ECR_PASSWORD}' \
-    //           --namespace=${NAMESPACE} \
-    //           --dry-run=client -o yaml | kubectl apply -f -
+    //         kubectl delete secret ecr-pull-creds --ignore-not-found -n "${NAMESPACE}"
+    //         kubectl -n "${NAMESPACE}" create secret docker-registry ecr-pull-creds \
+    //             --docker-server=314525640319.dkr.ecr.il-central-1.amazonaws.com \
+    //             --docker-username=AWS \
+    //             --docker-password="${ECR_PASSWORD}" \
+    //             --docker-email=you@example.com
     //       """
     //     }
     //   }
     // }
+     
 
     stage('Build & Push Docker Image') {
       steps {

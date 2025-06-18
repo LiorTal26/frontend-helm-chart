@@ -27,8 +27,6 @@ spec:
 
     - name: kubectl
       image: d3fk/kubectl:v1.30
-      command:
-            - cat
       tty: true
 """
     }

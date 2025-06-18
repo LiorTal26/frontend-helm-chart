@@ -26,7 +26,9 @@ spec:
       tty: true
 
     - name: kubectl
-      image: d3fk/kubectl:v1.30
+      image: bitnami/kubectl:latest
+        command:
+            - cat
       tty: true
 """
     }

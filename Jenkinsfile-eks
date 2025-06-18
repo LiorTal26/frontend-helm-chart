@@ -103,11 +103,12 @@ spec:
       agent any
       steps {
         sh """
+          echo aws creds "${ECR_PASSWORD}"
           kubectl delete secret ecr-pull-creds --ignore-not-found -n ${NAMESPACE}
-          kubectl -n ${NAMESPACE} create secret docker-registry ecr-pull-creds \\
-            --docker-server=${ECR_REGISTRY} \\
-            --docker-username=AWS \\
-            --docker-password=${ECR_PASSWORD} \\
+          kubectl -n ${NAMESPACE} create secret docker-registry ecr-pull-creds \
+            --docker-server=${ECR_REGISTRY} \
+            --docker-username=AWS \
+            --docker-password=${ECR_PASSWORD} \
             --docker-email=you@example.com
         """
       }

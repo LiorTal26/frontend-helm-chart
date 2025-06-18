@@ -14,12 +14,11 @@ metadata:
     app: jenkins-agent
 spec:
   serviceAccountName: jenkins-admin
-
   imagePullSecrets:
     - name: ecr-pull-creds
 
   containers:
-  
+
   - name: dind
     image: docker:20.10-dind
     securityContext:
@@ -33,25 +32,24 @@ spec:
 
   - name: docker
     image: docker:20.10
-    command:
-      - cat
+    command: ['cat']
     tty: true
+    stdin: true
     env:
       - name: DOCKER_HOST
         value: tcp://localhost:2375
 
   - name: aws-cli
     image: amazon/aws-cli:2.11.0
-    command:
-      - cat
+    command: ['cat']
     tty: true
+    stdin: true
 
   - name: helm
     image: alpine/helm:3.10.0
-    command:
-      - cat
+    command: ['cat']
     tty: true
-    
+    stdin: true
 """
     }
   }
@@ -74,6 +72,7 @@ spec:
         checkout scm
       }
     }
+
     stage('kubectl version') {
       agent any
       steps {
@@ -82,7 +81,7 @@ spec:
     }
 
     stage('Authenticate to ECR') {
-      agent
+      // ← removed the stray `agent` here so this runs in the aws-cli container 
       steps {
         container('aws-cli') {
           withCredentials([[
@@ -97,40 +96,22 @@ spec:
             }
           }
         }
-        
       }
     }
+
     stage('Authenticate & Create ECR Secret') {
       agent any
       steps {
         sh """
           kubectl delete secret ecr-pull-creds --ignore-not-found -n ${NAMESPACE}
-          kubectl -n ${NAMESPACE} create secret docker-registry ecr-pull-creds \
-            --docker-server=${ECR_REGISTRY} \
-            --docker-username=AWS \
-            --docker-password=${ECR_PASSWORD} \
+          kubectl -n ${NAMESPACE} create secret docker-registry ecr-pull-creds \\
+            --docker-server=${ECR_REGISTRY} \\
+            --docker-username=AWS \\
+            --docker-password=${ECR_PASSWORD} \\
             --docker-email=you@example.com
         """
       }
     }
-    
-    // stage('Create ECR Secret') {
-    //   steps {
-    //     container('kubectl') {
-    //       sh """
-    //       echo ecr creds "${ECR_PASSWORD}"
-    //       echo "Creating or updating ECR pull secret in Kubernetes namespace: ${NAMESPACE}"
-    //         kubectl delete secret ecr-pull-creds --ignore-not-found -n "${NAMESPACE}"
-    //         kubectl -n "${NAMESPACE}" create secret docker-registry ecr-pull-creds \
-    //             --docker-server=314525640319.dkr.ecr.il-central-1.amazonaws.com \
-    //             --docker-username=AWS \
-    //             --docker-password="${ECR_PASSWORD}" \
-    //             --docker-email=you@example.com
-    //       """
-    //     }
-    //   }
-    // }
-     
 
     stage('Build & Push Docker Image') {
       steps {
@@ -146,13 +127,7 @@ spec:
         }
       }
     }
-    // stage('Helm push to ECR') {
-    //   steps {
-    //     container('helm') {
-    //       sh "helm lint ${CHART_DIR}"
-    //     }
-    //   }
-    // }
+
     stage('Helm Lint & Package') {
       steps {
         container('helm') {
@@ -165,12 +140,12 @@ spec:
       steps {
         container('helm') {
           sh """
-            helm upgrade --install ${RELEASE_NAME} ${CHART_DIR} \
-              --namespace ${NAMESPACE} \
-              --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \
-              --set image.tag="${IMAGE_TAG}" \
-              --set ingress.enabled=true \
-              --set ingress.host=${HOST_INGRESS} \
+            helm upgrade --install ${RELEASE_NAME} ${CHART_DIR} \\
+              --namespace ${NAMESPACE} \\
+              --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \\
+              --set image.tag=${IMAGE_TAG} \\
+              --set ingress.enabled=true \\
+              --set ingress.host=${HOST_INGRESS} \\
               --set imagePullSecrets[0].name=ecr-pull-creds
           """
         }

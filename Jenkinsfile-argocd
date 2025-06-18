@@ -101,8 +101,6 @@ spec:
       }
     }
 
-   
-
     stage('Build & Push Docker Image') {
       steps {
         container('docker') {
@@ -117,11 +115,12 @@ spec:
         }
       }
     }
+
     stage('Sync ArgoCD Application') {
-  agent any
-  steps {
-    script {
-      writeFile file: 'argocd-app.yaml', text: """\
+      agent any
+      steps {
+        script {
+          writeFile file: 'argocd-app.yaml', text: """\
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -139,7 +138,7 @@ spec:
         replicaCount: 2
 
         image:
-          repository: "${ECR_REGISTRY}"/lior/helm/frontend
+          repository: "${ECR_REGISTRY}/lior/helm/frontend"
           tag: "${IMAGE_TAG}"
           pullPolicy: IfNotPresent
 
@@ -162,14 +161,11 @@ spec:
       prune: true
       selfHeal: true
 """
-      sh 'kubectl apply -f argocd-app.yaml'
+          sh 'kubectl apply -f argocd-app.yaml'
+        }
+      }
     }
-  }
-}
-
-}
-
-  }
+  } // end stages
 
   post {
     success {

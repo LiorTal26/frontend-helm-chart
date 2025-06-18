@@ -16,7 +16,8 @@ spec:
   serviceAccountName: jenkins-admin
 
   imagePullSecrets:
-    - name: ecr-pull-secret
+    - name: ecr-pull-creds
+
   containers:
   - name: dind
     image: docker:20.10-dind
@@ -78,6 +79,16 @@ spec:
         checkout scm
       }
     }
+    stage('Kubectl check  ') {
+      steps {
+        container('kubectl') {
+          sh """
+           kubectl version 
+           
+           """
+        }
+      }
+    }
 
     stage('Authenticate to ECR') {
       steps {
@@ -97,17 +108,7 @@ spec:
         
       }
     }
-    stage('Kubectl check  ') {
-      steps {
-        container('kubectl') {
-          sh """
-           echo ecr creds "${ECR_PASSWORD}" 
-           kubectl version 
-           
-           """
-        }
-      }
-    }
+    
     // stage('Create ECR Secret') {
     //   steps {
     //     container('kubectl') {

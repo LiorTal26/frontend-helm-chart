@@ -50,12 +50,6 @@ spec:
     command:
       - cat
     tty: true
-
-  - name: kubectl
-    image: bitnami/kubectl:1.32.4
-    command:
-      - cat
-    tty: true
     
 """
     }
@@ -79,14 +73,9 @@ spec:
         checkout scm
       }
     }
-    stage('Kubectl check  ') {
+    stage('kubectl version') {
       steps {
-        container('kubectl') {
-          sh """
-           kubectl version 
-           
-           """
-        }
+        sh 'kubectl version --client'
       }
     }
 

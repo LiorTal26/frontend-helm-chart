@@ -27,7 +27,7 @@ spec:
 
     - name: kubectl
       image: bitnami/kubectl:latest
-        command:
+      command:
             - cat
       tty: true
 """

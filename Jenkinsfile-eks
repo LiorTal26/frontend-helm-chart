@@ -19,26 +19,7 @@ spec:
     - name: ecr-pull-creds
 
   containers:
-  - name: dind
-    image: docker:20.10-dind
-    securityContext:
-      privileged: true
-    env:
-      - name: DOCKER_TLS_CERTDIR
-        value: ""
-    args:
-      - --host=tcp://0.0.0.0:2375
-      - --storage-driver=overlay2
-
-  - name: docker
-    image: docker:20.10
-    command:
-      - cat
-    tty: true
-    env:
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
-        
+  
   - name: dind
     image: docker:20.10-dind
     securityContext:
@@ -94,12 +75,14 @@ spec:
       }
     }
     stage('kubectl version') {
+      agent any
       steps {
         sh 'kubectl version --client'
       }
     }
 
     stage('Authenticate to ECR') {
+      agent
       steps {
         container('aws-cli') {
           withCredentials([[
@@ -115,6 +98,19 @@ spec:
           }
         }
         
+      }
+    }
+    stage('Authenticate & Create ECR Secret') {
+      agent any
+      steps {
+        sh """
+          kubectl delete secret ecr-pull-creds --ignore-not-found -n ${NAMESPACE}
+          kubectl -n ${NAMESPACE} create secret docker-registry ecr-pull-creds \
+            --docker-server=${ECR_REGISTRY} \
+            --docker-username=AWS \
+            --docker-password=${ECR_PASSWORD} \
+            --docker-email=you@example.com
+        """
       }
     }
     

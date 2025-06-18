@@ -1,0 +1,157 @@
+pipeline {
+  triggers {
+    pollSCM('H/1 * * * *')
+  }
+
+  agent {
+    kubernetes {
+      cloud 'imtech01-eks'
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: jenkins-agent
+spec:
+  serviceAccountName: jenkins-admin
+
+  imagePullSecrets:
+    - name: ecr-pull-creds
+
+  containers:
+  - name: aws-cli
+    image: amazon/aws-cli:2.11.0
+    command:
+      - cat
+    tty: true
+
+  - name: kubectl
+    image: d3fk/kubectl:v1.30
+    command:
+      - cat
+    tty: true
+
+    
+"""
+    }
+  }
+
+  environment {
+    AWS_REGION    = 'il-central-1'
+    ECR_REGISTRY  = '314525640319.dkr.ecr.il-central-1.amazonaws.com'
+    ECR_REPO      = 'lior/helm/frontend'
+    IMAGE_TAG     = "${env.BUILD_NUMBER}"
+    IMAGE_NAME    = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
+    CHART_DIR     = 'lior-nginx'
+    RELEASE_NAME  = 'lior-nginx'
+    NAMESPACE     = 'lior'
+    HOST_INGRESS  = 'lior-ingress.aws.cts.care'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    stage('kubectl version') {
+      steps {
+        container('kubectl') {
+          sh 'kubectl version --client'
+        }
+      }
+    }
+
+    stage('Authenticate to ECR') {
+      steps {
+        container('aws-cli') {
+          withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: 'imtech'
+          ]]) {
+            script {
+              env.ECR_PASSWORD = sh(
+                script: "aws --region ${AWS_REGION} ecr get-login-password",
+                returnStdout: true
+              ).trim()
+            }
+          }
+        }
+        
+      }
+    }
+    
+    // stage('Create ECR Secret') {
+    //   steps {
+    //     container('kubectl') {
+    //       sh """
+    //       echo ecr creds "${ECR_PASSWORD}"
+    //       echo "Creating or updating ECR pull secret in Kubernetes namespace: ${NAMESPACE}"
+    //         kubectl delete secret ecr-pull-creds --ignore-not-found -n "${NAMESPACE}"
+    //         kubectl -n "${NAMESPACE}" create secret docker-registry ecr-pull-creds \
+    //             --docker-server=314525640319.dkr.ecr.il-central-1.amazonaws.com \
+    //             --docker-username=AWS \
+    //             --docker-password="${ECR_PASSWORD}" \
+    //             --docker-email=you@example.com
+    //       """
+    //     }
+    //   }
+    // }
+     
+
+//     stage('Build & Push Docker Image') {
+//       steps {
+//         container('docker') {
+//           sh """
+//             echo 'Waiting for Docker daemon…'
+//             until docker info > /dev/null 2>&1; do sleep 2; done
+
+//             echo '${ECR_PASSWORD}' | docker login -u AWS --password-stdin ${ECR_REGISTRY}
+//             docker build -t ${IMAGE_NAME} ./frontend
+//             docker push ${IMAGE_NAME}
+//           """
+//         }
+//       }
+//     }
+//     // stage('Helm push to ECR') {
+//     //   steps {
+//     //     container('helm') {
+//     //       sh "helm lint ${CHART_DIR}"
+//     //     }
+//     //   }
+//     // }
+//     stage('Helm Lint & Package') {
+//       steps {
+//         container('helm') {
+//           sh "helm lint ${CHART_DIR}"
+//         }
+//       }
+//     }
+
+//     stage('Deploy with Helm') {
+//       steps {
+//         container('helm') {
+//           sh """
+//             helm upgrade --install ${RELEASE_NAME} ${CHART_DIR} \
+//               --namespace ${NAMESPACE} \
+//               --set image.repository=${ECR_REGISTRY}/${ECR_REPO} \
+//               --set image.tag="${IMAGE_TAG}" \
+//               --set ingress.enabled=true \
+//               --set ingress.host=${HOST_INGRESS} \
+//               --set imagePullSecrets[0].name=ecr-pull-creds
+//           """
+//         }
+//       }
+//     }
+//   }
+
+  post {
+    success {
+      echo "✅ Deployment successful: ${IMAGE_NAME} deployed to ${NAMESPACE}."
+      echo "Access the application at: http://${HOST_INGRESS}"
+    }
+    failure {
+      echo "❌ Deployment failed. Please check the logs for details."
+    }
+  }
+}

@@ -54,14 +54,21 @@ spec:
         checkout scm
       }
     }
-
-    stage('kubectl version') {
-      steps {
-        container('kubectl') {
-          sh 'kubectl version --client'
+    stage('Apply Deployment') {
+            steps {
+                script {
+                   withKubeConfig(
+                       caCertificate: credentials('Jenkins eks token imtech01'),
+                       server: 'https://D91654736FB176F2DE1BCF2FD7450690.yl4.il-central-1.eks.amazonaws.com',
+                       namespace: '${NAMESPACE}',
+                       credentialsId: 'sa-token-secret'
+                   ) {
+                        sh 'kubectl version --client'
+                    }
+                }
+            }
         }
-      }
-    }
+    
 
     stage('Authenticate to ECR') {
       steps {

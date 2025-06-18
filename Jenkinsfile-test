@@ -19,19 +19,17 @@ spec:
     - name: ecr-pull-creds
 
   containers:
-  - name: aws-cli
-    image: amazon/aws-cli:2.11.0
-    command:
-      - cat
-    tty: true
+    - name: aws-cli
+      image: amazon/aws-cli:2.11.0
+      command:
+        - cat
+      tty: true
 
-  - name: kubectl
-    image: d3fk/kubectl:v1.30
-    command:
-      - cat
-    tty: true
-
-    
+    - name: kubectl
+      image: d3fk/kubectl:v1.30
+      command:
+        - cat
+      tty: true
 """
     }
   }
@@ -54,6 +52,7 @@ spec:
         checkout scm
       }
     }
+
     stage('kubectl version') {
       steps {
         container('kubectl') {
@@ -77,10 +76,11 @@ spec:
             }
           }
         }
-        
       }
     }
-    
+
+  } // end stages
+
   post {
     success {
       echo "✅ Deployment successful: ${IMAGE_NAME} deployed to ${NAMESPACE}."
@@ -90,6 +90,4 @@ spec:
       echo "❌ Deployment failed. Please check the logs for details."
     }
   }
-
-}
 }
